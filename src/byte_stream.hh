@@ -23,13 +23,12 @@ public:
   bool has_error() const { return error_; }; // Has the stream had an error?
 
 protected:
-  // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
-  std::queue<std::string_view> buffer_ {};
+  std::queue<std::string> buffer_;
 
   uint64_t capacity_;
-  uint64_t cur_num_;
-  uint64_t write_cnt_;
-  uint64_t read_cnt_;
+  uint64_t cur_num_; // The number of bytes stored
+  uint64_t pushed_num;
+  uint64_t popped_num_;
 
   bool closed_ {};
   bool error_ {};

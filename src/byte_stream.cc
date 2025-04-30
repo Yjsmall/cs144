@@ -4,7 +4,7 @@
 using namespace std;
 
 ByteStream::ByteStream( uint64_t capacity )
-  : capacity_( capacity ), cur_num_( 0 ), write_cnt_( 0 ), read_cnt_( 0 )
+  : buffer_(), capacity_( capacity ), cur_num_( 0 ), pushed_num( 0 ), popped_num_( 0 )
 {}
 
 /*
@@ -16,20 +16,23 @@ ByteStream::ByteStream( uint64_t capacity )
  */
 void Writer::push( string data )
 {
-  if (is_closed() || data.empty()) {
+  if ( is_closed() || data.empty() ) {
     return;
   }
 
-  const auto available_num = available_capacity();
+  const auto free_space = available_capacity();
 
-  if ( available_num > 0 ) {
+  if ( free_space <= 0 ) {
     std::cout << "There is no space to write.\n";
     return;
   }
-  const auto in_datas = data.substr( available_num );
-  buffer_.push( in_datas  );
 
-  write_cnt_ += in_datas.size();
+  // Take the minimum of available space and the string length
+  const auto in_size = data.size() > free_space ? free_space : data.size();
+  const auto in_datas = data.substr( 0, in_size );
+  buffer_.push( in_datas );
+
+  pushed_num += in_datas.size();
   cur_num_ += in_datas.size();
 }
 
@@ -50,7 +53,7 @@ uint64_t Writer::available_capacity() const
 
 uint64_t Writer::bytes_pushed() const
 {
-  return write_cnt_;
+  return pushed_num;
 }
 
 /*
@@ -68,21 +71,19 @@ string_view Reader::peek() const
 
 void Reader::pop( uint64_t len )
 {
-  auto out_num = cur_num_;
-  if (out_num > len) {
-    out_num = len;
-  }
+  auto out_num = cur_num_ > len ? len : cur_num_;
 
-  while (out_num != 0) {
-    auto& first = buffer_.front();
-    if (out_num >= first.size()) {
-      buffer_.pop();
+  while ( out_num != 0 ) {
+    if ( auto& first = buffer_.front(); out_num >= first.size() ) {
+      cur_num_ -= first.size();
       out_num -= first.size();
-      read_cnt_ -= first.size();
+      popped_num_ += first.size();
+      buffer_.pop();
     } else {
       first = first.substr( out_num );
-      out_num = 0;
       cur_num_ -= out_num;
+      popped_num_ += out_num;
+      out_num = 0;
     }
   }
 }
@@ -99,6 +100,5 @@ uint64_t Reader::bytes_buffered() const
 
 uint64_t Reader::bytes_popped() const
 {
-  return read_cnt_;
+  return popped_num_;
 }
-
