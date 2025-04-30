@@ -10,9 +10,9 @@ using namespace std;
 
 void get_URL( const string& host, const string& path )
 {
-  const auto addr = Address(host, "http");
+  const auto addr = Address( host, "http" );
   auto tcp_socket = TCPSocket();
-  tcp_socket.connect(addr);
+  tcp_socket.connect( addr );
 
   const auto req_line = format( "GET {} HTTP/1.1\r\n", path );
   const auto req_header = format( "Host: {}\r\n", host );
@@ -21,11 +21,10 @@ void get_URL( const string& host, const string& path )
   tcp_socket.write( req_header );
   tcp_socket.write( req_end );
 
-
   string res;
-  while (!tcp_socket.eof()) {
+  while ( !tcp_socket.eof() ) {
     tcp_socket.read( res );
-    cout << res << '\n';
+    cout << res;
   }
 
   tcp_socket.shutdown( SHUT_RD );
