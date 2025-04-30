@@ -1,6 +1,7 @@
 #include "socket.hh"
 
 #include <cstdlib>
+#include <format>
 #include <iostream>
 #include <span>
 #include <string>
@@ -9,8 +10,26 @@ using namespace std;
 
 void get_URL( const string& host, const string& path )
 {
-  cerr << "Function called: get_URL(" << host << ", " << path << ")\n";
-  cerr << "Warning: get_URL() has not been implemented yet.\n";
+  const auto addr = Address(host, "http");
+  auto tcp_socket = TCPSocket();
+  tcp_socket.connect(addr);
+
+  const auto req_line = format( "GET {} HTTP/1.1\r\n", path );
+  const auto req_header = format( "Host: {}\r\n", host );
+  constexpr auto req_end = "Connection: close\r\n\r\n"sv;
+  tcp_socket.write( req_line );
+  tcp_socket.write( req_header );
+  tcp_socket.write( req_end );
+
+
+  string res;
+  while (!tcp_socket.eof()) {
+    tcp_socket.read( res );
+    cout << res << '\n';
+  }
+
+  tcp_socket.shutdown( SHUT_RD );
+  tcp_socket.close();
 }
 
 int main( int argc, char* argv[] )
