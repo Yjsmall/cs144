@@ -6,7 +6,7 @@ class Reassembler
 {
 public:
   // Construct Reassembler to write into given ByteStream.
-  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) {}
+  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ), next_idx_( 0 ) {}
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -42,5 +42,26 @@ public:
   const Writer& writer() const { return output_.writer(); }
 
 private:
+  // Merge overlapping intervals
+  void merge_interval();
+
   ByteStream output_;
+
+  uint64_t next_idx_;
+
+  struct interval_
+  {
+    std::string data_;
+    uint64_t start_ {};
+    uint64_t end_ {};
+
+    explicit interval_() = default;
+
+    explicit interval_( std::string&& data, uint64_t start_idx_ ) : data_( std::move( data ) ), start_( start_idx_ )
+    {
+      end_ = start_ + data_.length();
+    }
+  };
+
+  std::vector<interval_> reasseembler_vec_ {};
 };
