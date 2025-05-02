@@ -2,11 +2,27 @@
 
 #include "byte_stream.hh"
 
+struct interval_
+{
+  std::string data_;
+  uint64_t start_ {};
+  uint64_t end_ {};
+
+  explicit interval_() = default;
+
+  explicit interval_( std::string&& data, uint64_t start_idx_ ) : data_( std::move( data ) ), start_( start_idx_ )
+  {
+    end_ = start_ + data_.length();
+  }
+};
+
 class Reassembler
 {
 public:
   // Construct Reassembler to write into given ByteStream.
-  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ), next_idx_( 0 ) {}
+  explicit Reassembler( ByteStream&& output )
+    : output_( std::move( output ) ), next_idx_( 0 ), EOF_idx_( UINT64_MAX )
+  {}
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -48,20 +64,7 @@ private:
   ByteStream output_;
 
   uint64_t next_idx_;
-
-  struct interval_
-  {
-    std::string data_;
-    uint64_t start_ {};
-    uint64_t end_ {};
-
-    explicit interval_() = default;
-
-    explicit interval_( std::string&& data, uint64_t start_idx_ ) : data_( std::move( data ) ), start_( start_idx_ )
-    {
-      end_ = start_ + data_.length();
-    }
-  };
+  uint64_t EOF_idx_;
 
   std::vector<interval_> reasseembler_vec_ {};
 };

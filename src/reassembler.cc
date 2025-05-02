@@ -10,9 +10,15 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   // debug( "unimplemented insert({}, {}, {}) called", first_index, data, is_last_substring );
   auto& writer = output_.writer();
 
-  const std::pair<uint64_t, uint64_t> window( next_idx_, first_index + writer.available_capacity() );
+  const std::pair<uint64_t, uint64_t> window( next_idx_, next_idx_ + writer.available_capacity() );
   std::pair<uint64_t, uint64_t> elem( first_index, first_index + data.size() );
 
+  if ( is_last_substring ) {
+    EOF_idx_ = elem.second;
+  }
+
+  // wind: [xxxx]
+  // data:         [datas]
   if ( elem.first >= window.second ) {
     return;
   }
@@ -22,16 +28,17 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   elem.first = std::max( window.first, elem.first );
   elem.second = std::min( window.second, elem.second );
 
+  // wind: [xxxxxxxxxx]
+  // data:   [datas]
   if ( elem.first >= elem.second ) {
-    if ( is_last_substring ) {
-
+    if ( next_idx_ == EOF_idx_ ) {
       writer.close();
     }
     return;
   }
 
   const uint64_t len = elem.second - elem.first;
-  reasseembler_vec_.emplace_back( std::move( data.substr( elem.first - first_index, len ) ), first_index );
+  reasseembler_vec_.emplace_back( data.substr( elem.first - first_index, len ), elem.first );
 
   merge_interval();
   if ( const auto it = reasseembler_vec_.begin(); it->start_ == next_idx_ ) {
@@ -40,7 +47,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     reasseembler_vec_.erase( it );
   }
 
-  if ( is_last_substring ) {
+  if ( next_idx_ == EOF_idx_ ) {
     writer.close();
   }
 }
